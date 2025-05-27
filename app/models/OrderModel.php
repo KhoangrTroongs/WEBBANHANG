@@ -56,6 +56,8 @@ class OrderModel
      * @param int $orderId ID đơn hàng
      * @param array $cartItems Mảng các sản phẩm trong giỏ hàng
      * @return bool True nếu thành công, false nếu thất bại
+     *
+     * NOTE: Cấu trúc mới - price sẽ lưu tổng tiền (unit_price * quantity) thay vì đơn giá
      */
     public function createOrderDetails($orderId, $cartItems)
     {
@@ -69,10 +71,13 @@ class OrderModel
             $stmt = $this->conn->prepare($query);
 
             foreach ($cartItems as $productId => $item) {
+                // Tính tổng tiền cho sản phẩm này (unit_price * quantity)
+                $totalPrice = $item['price'] * $item['quantity'];
+
                 $stmt->bindParam(':order_id', $orderId);
                 $stmt->bindParam(':product_id', $productId);
                 $stmt->bindParam(':quantity', $item['quantity']);
-                $stmt->bindParam(':price', $item['price']);
+                $stmt->bindParam(':price', $totalPrice); // Lưu tổng tiền thay vì đơn giá
 
                 if (!$stmt->execute()) {
                     $this->conn->rollBack();
@@ -93,6 +98,8 @@ class OrderModel
      * Lấy thông tin đơn hàng kèm chi tiết theo ID
      * @param int $id ID đơn hàng
      * @return object|false Thông tin đơn hàng nếu tìm thấy, false nếu không
+     *
+     * NOTE: Cấu trúc mới - price trong order_details đã là tổng tiền, không cần nhân với quantity
      */
     public function getOrderById($id)
     {
@@ -107,7 +114,7 @@ class OrderModel
 
             if ($order) {
                 // Lấy chi tiết đơn hàng với thông tin sản phẩm
-                $detailsQuery = "SELECT od.*, p.name as product_name
+                $detailsQuery = "SELECT od.*, p.name as product_name, p.price as unit_price
                                FROM " . $this->order_details_table . " od
                                LEFT JOIN product p ON od.product_id = p.id
                                WHERE od.order_id = :order_id";
@@ -117,10 +124,15 @@ class OrderModel
 
                 $order->details = $detailsStmt->fetchAll(PDO::FETCH_OBJ);
 
-                // Tính tổng tiền từ chi tiết đơn hàng
+                // Tính tổng tiền từ chi tiết đơn hàng (price đã là tổng tiền)
                 $order->total_amount = 0;
                 foreach ($order->details as $detail) {
-                    $detail->subtotal = $detail->price * $detail->quantity;
+                    // price đã là tổng tiền (unit_price * quantity), không cần tính lại
+                    $detail->subtotal = $detail->price;
+
+                    // Tính đơn giá từ tổng tiền và số lượng để hiển thị
+                    $detail->unit_price = $detail->quantity > 0 ? ($detail->price / $detail->quantity) : 0;
+
                     $order->total_amount += $detail->subtotal;
                 }
 
@@ -128,6 +140,7 @@ class OrderModel
                 $order->customer_name = $order->name;
                 $order->customer_phone = $order->phone;
                 $order->customer_address = $order->address;
+                $order->customer_email = $order->email ?? '';
                 $order->status = $order->status ?? 'pending';
             }
 
@@ -410,8 +423,8 @@ class OrderModel
             $countStmt->execute();
             $stats->total_orders = $countStmt->fetch(PDO::FETCH_OBJ)->total_orders;
 
-            // Tổng doanh thu
-            $revenueQuery = "SELECT SUM(od.price * od.quantity) as total_revenue
+            // Tổng doanh thu (price đã là tổng tiền)
+            $revenueQuery = "SELECT SUM(od.price) as total_revenue
                            FROM " . $this->order_details_table . " od";
             $revenueStmt = $this->conn->prepare($revenueQuery);
             $revenueStmt->execute();
@@ -424,8 +437,8 @@ class OrderModel
             $todayStmt->execute();
             $stats->today_orders = $todayStmt->fetch(PDO::FETCH_OBJ)->today_orders;
 
-            // Doanh thu hôm nay
-            $todayRevenueQuery = "SELECT SUM(od.price * od.quantity) as today_revenue
+            // Doanh thu hôm nay (price đã là tổng tiền)
+            $todayRevenueQuery = "SELECT SUM(od.price) as today_revenue
                                 FROM " . $this->order_details_table . " od
                                 INNER JOIN " . $this->orders_table . " o ON od.order_id = o.id
                                 WHERE DATE(o.created_at) = CURDATE()";
@@ -449,11 +462,13 @@ class OrderModel
      * Tính tổng tiền của một đơn hàng
      * @param int $orderId ID đơn hàng
      * @return float Tổng tiền
+     *
+     * NOTE: Cấu trúc mới - price đã là tổng tiền, chỉ cần SUM(price)
      */
     private function calculateOrderTotal($orderId)
     {
         try {
-            $query = "SELECT SUM(price * quantity) as total
+            $query = "SELECT SUM(price) as total
                      FROM " . $this->order_details_table . "
                      WHERE order_id = :order_id";
             $stmt = $this->conn->prepare($query);
@@ -465,6 +480,117 @@ class OrderModel
         } catch (PDOException $e) {
             error_log("Error calculating order total: " . $e->getMessage());
             return 0;
+        }
+    }
+
+    /**
+     * Migrate existing order_details data from unit price to total price structure
+     * This method should be run once to convert existing data
+     * @return bool True if successful, false otherwise
+     */
+    public function migrateOrderDetailsToTotalPrice()
+    {
+        try {
+            $this->conn->beginTransaction();
+
+            // Update existing order_details where price is unit price
+            // Convert to total price by multiplying price * quantity
+            $query = "UPDATE " . $this->order_details_table . "
+                     SET price = price * quantity
+                     WHERE price < (SELECT MAX(p.price) FROM product p) * 10"; // Safety check
+
+            $stmt = $this->conn->prepare($query);
+            $result = $stmt->execute();
+
+            if ($result) {
+                $this->conn->commit();
+                error_log("Successfully migrated order_details to total price structure");
+                return true;
+            } else {
+                $this->conn->rollBack();
+                error_log("Failed to migrate order_details to total price structure");
+                return false;
+            }
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Error migrating order_details: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if order_details table uses new pricing structure (total price)
+     * @return bool True if using new structure, false if using old structure
+     */
+    public function isUsingNewPricingStructure()
+    {
+        try {
+            // Check a sample order_detail to see if price seems to be total or unit price
+            $query = "SELECT od.price, od.quantity, p.price as product_unit_price
+                     FROM " . $this->order_details_table . " od
+                     LEFT JOIN product p ON od.product_id = p.id
+                     LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+
+            $sample = $stmt->fetch(PDO::FETCH_OBJ);
+
+            if ($sample) {
+                // If order_detail price is approximately equal to product_price * quantity,
+                // then it's using new structure
+                $expectedTotal = $sample->product_unit_price * $sample->quantity;
+                $tolerance = 0.01; // Allow small floating point differences
+
+                return abs($sample->price - $expectedTotal) < $tolerance;
+            }
+
+            return false; // No data to check
+        } catch (PDOException $e) {
+            error_log("Error checking pricing structure: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get unit price for a specific order detail item
+     * @param object $orderDetail Order detail object
+     * @return float Unit price
+     */
+    public function getUnitPriceFromOrderDetail($orderDetail)
+    {
+        if ($orderDetail->quantity > 0) {
+            return $orderDetail->price / $orderDetail->quantity;
+        }
+        return 0;
+    }
+
+    /**
+     * Add a new method to create order details with explicit total price
+     * @param int $orderId Order ID
+     * @param int $productId Product ID
+     * @param int $quantity Quantity
+     * @param float $unitPrice Unit price
+     * @return bool True if successful, false otherwise
+     */
+    public function addOrderDetailWithTotalPrice($orderId, $productId, $quantity, $unitPrice)
+    {
+        try {
+            $totalPrice = $unitPrice * $quantity;
+
+            $query = "INSERT INTO " . $this->order_details_table . "
+                     (order_id, product_id, quantity, price)
+                     VALUES (:order_id, :product_id, :quantity, :total_price)";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':order_id', $orderId);
+            $stmt->bindParam(':product_id', $productId);
+            $stmt->bindParam(':quantity', $quantity);
+            $stmt->bindParam(':total_price', $totalPrice);
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error adding order detail with total price: " . $e->getMessage());
+            return false;
         }
     }
 }

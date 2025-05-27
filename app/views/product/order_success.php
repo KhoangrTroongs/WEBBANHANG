@@ -103,7 +103,7 @@
                                     </td>
                                     <td>
                                         <span class="text-primary">
-                                            <?php echo number_format($detail->price, 0, ',', '.'); ?> VND
+                                            <?php echo number_format($detail->unit_price, 0, ',', '.'); ?> VND
                                         </span>
                                     </td>
                                     <td>

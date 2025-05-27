@@ -71,7 +71,7 @@
                     <td class="text-center"><?php echo $stt++; ?></td>
                     <td><?php echo htmlspecialchars($detail->product_name ?? 'Sản phẩm #' . $detail->product_id, ENT_QUOTES, 'UTF-8'); ?></td>
                     <td class="text-center"><?php echo $detail->quantity; ?></td>
-                    <td class="text-right"><?php echo number_format($detail->price, 0, ',', '.'); ?> VND</td>
+                    <td class="text-right"><?php echo number_format($detail->unit_price, 0, ',', '.'); ?> VND</td>
                     <td class="text-right"><?php echo number_format($detail->subtotal, 0, ',', '.'); ?> VND</td>
                 </tr>
             <?php endforeach; ?>
@@ -127,7 +127,7 @@
     </div>
 </div>
 
-<div class="row screen-only">
+<div class="row screen-only" style="display:flex;">
     <!-- Thông tin đơn hàng -->
     <div class="col-lg-8">
         <div class="card shadow-sm mb-4">
@@ -227,7 +227,7 @@
                                     </td>
                                     <td>
                                         <span class="text-primary">
-                                            <?php echo number_format($detail->price, 0, ',', '.'); ?> VND
+                                            <?php echo number_format($detail->unit_price, 0, ',', '.'); ?> VND
                                         </span>
                                     </td>
                                     <td>

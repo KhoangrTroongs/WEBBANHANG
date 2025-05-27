@@ -151,3 +151,34 @@ INSERT INTO product (name, description, price, image, category_id) VALUES
 ('Loa Tronsmart Element T6 Plus', 'Loa bluetooth công suất lớn', 1990000, NULL, 5),
 ('Ốp lưng Samsung Galaxy', 'Ốp lưng bảo vệ điện thoại Samsung', 190000, NULL, 4),
 ('Miếng lót chuột', 'Miếng lót chuột gaming cỡ lớn', 290000, NULL, 4);
+
+-- Thêm cột email vào bảng orders
+ALTER TABLE orders ADD COLUMN email VARCHAR(255) DEFAULT NULL AFTER phone;
+
+-- Thêm cột notes vào bảng orders
+ALTER TABLE orders ADD COLUMN notes TEXT DEFAULT NULL AFTER address;
+
+-- =====================================================
+-- ORDER DETAILS PRICING STRUCTURE MIGRATION
+-- =====================================================
+-- Migrate order_details table from unit price to total price structure
+-- IMPORTANT: This changes the meaning of the 'price' column in order_details
+--
+-- OLD: price = unit price, total = price * quantity (calculated)
+-- NEW: price = total amount (unit_price * quantity), unit price = price / quantity (calculated)
+
+-- Step 1: Create backup table (RECOMMENDED before migration)
+-- CREATE TABLE order_details_backup AS SELECT * FROM order_details;
+
+-- Step 2: Migrate existing data (uncomment to run)
+-- UPDATE order_details SET price = price * quantity WHERE quantity > 0;
+
+-- Step 3: Verify migration (check that totals make sense)
+-- SELECT
+--     od.order_id,
+--     od.product_id,
+--     od.quantity,
+--     od.price as total_price,
+--     (od.price / od.quantity) as calculated_unit_price
+-- FROM order_details od
+-- LIMIT 10;
