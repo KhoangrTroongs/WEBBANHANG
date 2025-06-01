@@ -251,18 +251,20 @@
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+            <div class="collapse navbar-collapse" id="navbarNav">                <ul class="navbar-nav me-auto">
+                    <?php if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'): ?>
                     <li class="nav-item">
                         <a class="nav-link px-3" href="/webbanhang/Product/">
                             <i class="fas fa-home me-1"></i>Trang chủ
                         </a>
                     </li>
+                    <?php endif; ?>
                     <li class="nav-item">
                         <a class="nav-link px-3" href="/webbanhang/Product/list">
                             <i class="fa-brands fa-product-hunt me-1"></i>Sản phẩm
                         </a>
                     </li>
+                    <?php if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
                     <li class="nav-item">
                         <a class="nav-link px-3" href="/webbanhang/Product/manage">
                             <i class="fas fa-tasks me-1"></i>Quản lý sản phẩm
@@ -270,18 +272,24 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link px-3" href="/webbanhang/Product/manageOrders">
-                            <i class="fas fa-clipboard-list me-1"></i>Đơn hàng
+                            <i class="fas fa-clipboard-list me-1"></i>Quản lý đơn hàng
                         </a>
                     </li>
-                </ul>
-                <div class="d-flex align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link px-3" href="/webbanhang/Account/manageUsers">
+                            <i class="fas fa-users me-1"></i>Quản lý người dùng
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                </ul>                <div class="d-flex align-items-center">
+                    <?php if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'): ?>
                     <form class="search-form d-flex me-3" action="/webbanhang/Product/search" method="GET">
                         <input class="form-control" type="search" name="keyword" placeholder="Tìm kiếm sản phẩm..." aria-label="Search">
                         <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
                     </form>
 
                     <!-- Cart Icon -->
-                    <a href="/webbanhang/Product/cart" class="btn btn-outline-primary position-relative">
+                    <a href="/webbanhang/Product/cart" class="btn btn-outline-primary position-relative me-2">
                         <i class="fas fa-shopping-cart"></i>
                         <?php
                         $cartCount = 0;
@@ -298,6 +306,55 @@
                             </span>
                         <?php endif; ?>
                     </a>
+
+                    <!-- Orders Link (for logged in users) -->
+                    <?php if (isset($_SESSION['user'])): ?>
+                        <a href="/webbanhang/Product/orders" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-box me-1"></i>Đơn hàng
+                        </a>
+                    <?php endif; ?>
+                    <?php endif; ?>
+
+                    <?php if (!isset($_SESSION['user'])): ?>
+                        <!-- Login/Register Buttons -->
+                        <a href="/webbanhang/Account/login" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-sign-in-alt me-1"></i>Đăng nhập
+                        </a>
+                        <a href="/webbanhang/Account/register" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-1"></i>Đăng ký
+                        </a>
+                    <?php else: ?>
+                        <!-- User Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-1"></i><?php echo htmlspecialchars($_SESSION['user']['fullname']); ?>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">                                <?php if (!isset($_SESSION['user']['role']) || $_SESSION['user']['role'] !== 'admin'): ?>
+                                <li><a class="dropdown-item" href="/webbanhang/Product">
+                                    <i class="fas fa-home me-2"></i>Trang chủ
+                                </a></li>
+                                <li><a class="dropdown-item" href="/webbanhang/Product/cart">
+                                    <i class="fas fa-shopping-cart me-2"></i>Giỏ hàng
+                                </a></li>
+                                <li><a class="dropdown-item" href="/webbanhang/Product/orders">
+                                    <i class="fas fa-box me-2"></i>Đơn hàng của tôi
+                                </a></li>
+                                <?php endif; ?>
+                                <?php if (isset($_SESSION['user']['role']) && $_SESSION['user']['role'] === 'admin'): ?>
+                                <li><a class="dropdown-item" href="/webbanhang/Product/manage">
+                                    <i class="fas fa-cog me-2"></i>Quản lý sản phẩm
+                                </a></li>
+                                <li><a class="dropdown-item" href="/webbanhang/Account/manageUsers">
+                                    <i class="fas fa-users me-2"></i>Quản lý người dùng
+                                </a></li>
+                                <?php endif; ?>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="/webbanhang/Account/logout">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                                </a></li>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

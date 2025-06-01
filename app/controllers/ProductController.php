@@ -5,14 +5,23 @@ require_once('app/models/ProductModel.php');
 require_once('app/models/CategoryModel.php');
 
 class ProductController
-{
-    private $productModel;
+{    private $productModel;
     private $db;
 
     public function __construct()
     {
         $this->db = (new Database())->getConnection();
         $this->productModel = new ProductModel($this->db);
+    }    private function checkAdminRole()
+    {
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'Bạn không có quyền truy cập trang này!'
+            ];
+            header('Location: /webbanhang/Product/');
+            exit();
+        }
     }
 
     public function index()
@@ -54,10 +63,11 @@ class ProductController
             // Hiển thị trang chủ mới
             include 'app/views/product/home.php';
         }
-    }
-
-    public function manage()
+    }    public function manage()
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
         // Lấy tham số tìm kiếm, lọc và sắp xếp từ URL
         $search = isset($_GET['search']) ? $_GET['search'] : null;
         $category_id = isset($_GET['category']) ? $_GET['category'] : null;
@@ -96,12 +106,18 @@ class ProductController
 
     public function add()
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
         $categories = (new CategoryModel($this->db))->getCategories();
         include_once 'app/views/product/add.php';
     }
 
     public function save()
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $name = $_POST['name'] ?? '';
             $description = $_POST['description'] ?? '';
@@ -125,6 +141,9 @@ class ProductController
 
     public function edit($id)
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
         $product = $this->productModel->getProductById($id);
         $categories = (new CategoryModel($this->db))->getCategories();
         if ($product) {
@@ -136,6 +155,9 @@ class ProductController
 
     public function update()
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['id'];
             $name = $_POST['name'];
@@ -158,6 +180,9 @@ class ProductController
 
     public function delete($id)
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
         if ($this->productModel->deleteProduct($id)) {
             header('Location: /webbanhang/Product');
         } else {
@@ -287,6 +312,9 @@ class ProductController
 
     public function categories()
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
         // Lấy danh sách danh mục
         $categoryModel = new CategoryModel($this->db);
         $categories = $categoryModel->getCategories();
@@ -511,10 +539,11 @@ class ProductController
             $totalAmount = 0;
             foreach ($_SESSION['cart'] as $item) {
                 $totalAmount += $item['price'] * $item['quantity'];
-            }
+            }            // Lấy user_id từ session nếu đã đăng nhập
+            $userId = isset($_SESSION['user']) ? $_SESSION['user']['id'] : null;
 
             // Tạo đơn hàng
-            $orderId = $orderModel->createOrder($customerName, $customerPhone, $customerEmail, $customerAddress, $orderNotes, $totalAmount);
+            $orderId = $orderModel->createOrder($customerName, $customerPhone, $customerEmail, $customerAddress, $orderNotes, $totalAmount, $userId);
 
             if ($orderId) {
                 // Tạo chi tiết đơn hàng
@@ -575,6 +604,9 @@ class ProductController
      */
     public function manageOrders()
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole(); 
+
         // Lấy tham số phân trang và tìm kiếm
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -628,6 +660,9 @@ class ProductController
      */
     public function updateOrderStatus()
     {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $orderId = (int)($_POST['order_id'] ?? 0);
             $status = trim($_POST['status'] ?? '');
@@ -714,6 +749,38 @@ class ProductController
                 header('Location: /webbanhang/Product/manageOrders');
                 break;
         }
+    }
+
+    /**
+     * Hiển thị danh sách đơn hàng của người dùng
+     */
+    public function orders()
+    {
+        // Kiểm tra người dùng đã đăng nhập chưa
+        if (!isset($_SESSION['user'])) {
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'Vui lòng đăng nhập để xem đơn hàng của bạn.'
+            ];
+            header('Location: /webbanhang/Account/login');
+            return;
+        }
+
+        $userId = $_SESSION['user']['id'];
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $limit = 10; // Số đơn hàng hiển thị trên mỗi trang
+
+        // Đảm bảo page không nhỏ hơn 1
+        if ($page < 1) $page = 1;
+
+        $orderModel = new OrderModel($this->db);
+        $result = $orderModel->getOrdersByUserId($userId, $page, $limit);
+        
+        $orders = $result['orders'];
+        $pagination = $result['pagination'];
+
+        // Hiển thị trang danh sách đơn hàng
+        include 'app/views/product/user_orders.php';
     }
 }
 ?>

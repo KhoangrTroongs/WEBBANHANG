@@ -26,15 +26,13 @@ class OrderModel
      * @param string $notes Ghi chú đơn hàng (có thể rỗng)
      * @param float $totalAmount Tổng tiền đơn hàng
      * @return int|false Order ID nếu thành công, false nếu thất bại
-     */
-    public function createOrder($customerName, $customerPhone, $customerEmail, $customerAddress, $notes, $totalAmount)
+     */    public function createOrder($customerName, $customerPhone, $customerEmail, $customerAddress, $notes, $totalAmount, $userId = null)
     {
         try {
             $query = "INSERT INTO " . $this->orders_table . "
-                     (name, phone, email, address, notes, created_at)
-                     VALUES (:name, :phone, :email, :address, :notes, NOW())";
-
-            $stmt = $this->conn->prepare($query);
+                     (user_id, name, phone, email, address, notes, created_at)
+                     VALUES (:user_id, :name, :phone, :email, :address, :notes, NOW())";            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':user_id', $userId);
             $stmt->bindParam(':name', $customerName);
             $stmt->bindParam(':phone', $customerPhone);
             $stmt->bindParam(':email', $customerEmail);
@@ -591,6 +589,90 @@ class OrderModel
         } catch (PDOException $e) {
             error_log("Error adding order detail with total price: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Lấy danh sách đơn hàng của người dùng
+     * @param int $userId ID của người dùng
+     * @param int $page Trang hiện tại
+     * @param int $limit Số đơn hàng trên mỗi trang
+     * @return array Mảng chứa đơn hàng và thông tin phân trang
+     */
+    public function getOrdersByUserId($userId, $page = 1, $limit = 10)
+    {
+        try {
+            $offset = ($page - 1) * $limit;
+            
+            // Lấy tổng số đơn hàng
+            $countQuery = "SELECT COUNT(*) as total FROM " . $this->orders_table . " WHERE user_id = :userId";
+            $countStmt = $this->conn->prepare($countQuery);
+            $countStmt->bindParam(':userId', $userId);
+            $countStmt->execute();
+            $totalRecords = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+            
+            // Tính số trang
+            $totalPages = ceil($totalRecords / $limit);
+            
+            // Lấy danh sách đơn hàng và tổng tiền
+            $query = "SELECT o.*, 
+                        (SELECT SUM(od.price) FROM " . $this->order_details_table . " od 
+                         WHERE od.order_id = o.id) as total_amount,
+                        o.status,
+                        (SELECT COUNT(*) FROM " . $this->order_details_table . " od 
+                         WHERE od.order_id = o.id) as items_count
+                 FROM " . $this->orders_table . " o
+                 WHERE o.user_id = :userId
+                 ORDER BY o.created_at DESC
+                 LIMIT :limit OFFSET :offset";
+                 
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Thêm chi tiết đơn hàng vào mỗi đơn hàng
+            foreach ($orders as &$order) {
+                $detailsQuery = "SELECT od.*, p.name as product_name, p.image, 
+                                   p.price as unit_price
+                           FROM " . $this->order_details_table . " od
+                           LEFT JOIN product p ON od.product_id = p.id
+                           WHERE od.order_id = :orderId";
+                           
+                $detailsStmt = $this->conn->prepare($detailsQuery);
+                $detailsStmt->bindParam(':orderId', $order['id']);
+                $detailsStmt->execute();
+                $order['details'] = $detailsStmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Format status
+                $statusInfo = $this->getStatusInfo($order['status'] ?? 'pending');
+                $order['status_info'] = $statusInfo;
+            }
+            
+            return [
+                'orders' => $orders,
+                'pagination' => [
+                    'total' => $totalRecords,
+                    'per_page' => $limit,
+                    'current_page' => $page,
+                    'total_pages' => $totalPages
+                ]
+            ];
+            
+        } catch (PDOException $e) {
+            error_log("Error getting user orders: " . $e->getMessage());
+            return [
+                'orders' => [],
+                'pagination' => [
+                    'total' => 0,
+                    'per_page' => $limit,
+                    'current_page' => 1,
+                    'total_pages' => 0
+                ]
+            ];
         }
     }
 }

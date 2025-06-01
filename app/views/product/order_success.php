@@ -19,6 +19,11 @@
     </div>
     <h4 class="alert-heading">Đặt hàng thành công!</h4>
     <p class="mb-0">Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất để xác nhận đơn hàng.</p>
+    <div class="mt-3">
+        <a href="/webbanhang/Product/orders" class="btn btn-outline-success">
+            <i class="fas fa-list me-2"></i>Xem tất cả đơn hàng
+        </a>
+    </div>
 </div>
 
 <div class="row">

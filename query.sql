@@ -158,6 +158,26 @@ ALTER TABLE orders ADD COLUMN email VARCHAR(255) DEFAULT NULL AFTER phone;
 -- Thêm cột notes vào bảng orders
 ALTER TABLE orders ADD COLUMN notes TEXT DEFAULT NULL AFTER address;
 
+CREATE TABLE IF NOT EXISTS account (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    fullname VARCHAR(100) NOT NULL,
+    role VARCHAR(20) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert admin account
+INSERT INTO account (username, password, fullname, role)
+VALUES ('admin', '$2y$10$VQYaPlxux7CLNC8mdJ0LeuWxP8cqviVVP4KD0VFaB6VgvBgGRMq5e', 'Administrator', 'admin');
+
+ALTER TABLE orders
+ADD COLUMN user_id INT AFTER id,
+ADD FOREIGN KEY (user_id) REFERENCES account(id);
+
+-- Note: The password hash above corresponds to 'admin123'
+-- Make sure to change this password after first login for security reasons
+
 -- =====================================================
 -- ORDER DETAILS PRICING STRUCTURE MIGRATION
 -- =====================================================
