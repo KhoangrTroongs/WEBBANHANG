@@ -675,5 +675,22 @@ class OrderModel
             ];
         }
     }
+
+    public function getUserOrders($userId) {
+        $query = "SELECT * FROM orders WHERE user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute(['user_id' => $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getUserPurchasedProducts($userId) {
+        $query = "SELECT DISTINCT p.* FROM product p 
+                  INNER JOIN order_details od ON p.id = od.product_id
+                  INNER JOIN orders o ON od.order_id = o.id 
+                  WHERE o.user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute(['user_id' => $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 ?>

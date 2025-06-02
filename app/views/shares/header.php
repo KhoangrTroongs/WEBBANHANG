@@ -328,10 +328,12 @@
                         <div class="dropdown">
                             <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-user-circle me-1"></i><?php echo htmlspecialchars($_SESSION['user']['fullname']); ?>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">                                <?php if (!isset($_SESSION['user']['role']) || $_SESSION['user']['role'] !== 'admin'): ?>
+                            </button>                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">                                <?php if (!isset($_SESSION['user']['role']) || $_SESSION['user']['role'] !== 'admin'): ?>
                                 <li><a class="dropdown-item" href="/webbanhang/Product">
                                     <i class="fas fa-home me-2"></i>Trang chủ
+                                </a></li>
+                                <li><a class="dropdown-item" href="/webbanhang/Account/profile">
+                                    <i class="fas fa-user me-2"></i>Thông tin cá nhân
                                 </a></li>
                                 <li><a class="dropdown-item" href="/webbanhang/Product/cart">
                                     <i class="fas fa-shopping-cart me-2"></i>Giỏ hàng

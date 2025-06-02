@@ -127,20 +127,37 @@ class AccountModel
             error_log("Error getting users: " . $e->getMessage());
             throw $e;
         }
-    }
-
-    public function updateUser($id, $fullname, $role)
+    }    public function updateUser($id, $data)
     {
         try {
-            $query = "UPDATE " . $this->table_name . " SET fullname = :fullname, role = :role WHERE id = :id";
+            $query = "UPDATE " . $this->table_name . " 
+                     SET fullname = :fullname,
+                         email = :email,
+                         phone = :phone,
+                         address = :address,
+                         gender = :gender,
+                         birthdate = :birthdate,
+                         role = :role 
+                     WHERE id = :id";
+            
             $stmt = $this->conn->prepare($query);
             
-            $fullname = htmlspecialchars(strip_tags($fullname));
-            $role = htmlspecialchars(strip_tags($role));
+            // Sanitize input
+            $data['fullname'] = htmlspecialchars(strip_tags($data['fullname']));
+            $data['email'] = htmlspecialchars(strip_tags($data['email']));
+            $data['phone'] = htmlspecialchars(strip_tags($data['phone']));
+            $data['address'] = htmlspecialchars(strip_tags($data['address']));
+            $data['gender'] = htmlspecialchars(strip_tags($data['gender']));
+            $data['role'] = htmlspecialchars(strip_tags($data['role']));
             
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            $stmt->bindParam(':fullname', $fullname, PDO::PARAM_STR);
-            $stmt->bindParam(':role', $role, PDO::PARAM_STR);
+            $stmt->bindParam(':fullname', $data['fullname'], PDO::PARAM_STR);
+            $stmt->bindParam(':email', $data['email'], PDO::PARAM_STR);
+            $stmt->bindParam(':phone', $data['phone'], PDO::PARAM_STR);
+            $stmt->bindParam(':address', $data['address'], PDO::PARAM_STR);
+            $stmt->bindParam(':gender', $data['gender'], PDO::PARAM_STR);
+            $stmt->bindParam(':birthdate', $data['birthdate'], PDO::PARAM_STR);
+            $stmt->bindParam(':role', $data['role'], PDO::PARAM_STR);
             
             return $stmt->execute();
         } catch (PDOException $e) {
@@ -177,6 +194,88 @@ class AccountModel
         } catch (PDOException $e) {
             error_log("Error resetting password: " . $e->getMessage());
             throw $e;
+        }
+    }    public function findByUsername($username) {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE username = :username";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':username', $username, PDO::PARAM_STR);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result) {
+            return $result;
+        }
+        return null;
+    }    public function updatePassword($username, $password) {
+        $query = "UPDATE " . $this->table_name . " SET password = :password WHERE username = :username";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':password', $password, PDO::PARAM_STR);
+        $stmt->bindParam(':username', $username, PDO::PARAM_STR);
+        return $stmt->execute();
+    }
+
+    public function getAccountById($id) {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }    public function updateProfile($id, $data) {
+        try {
+            $query = "UPDATE " . $this->table_name . " 
+                     SET fullname = :fullname,
+                         email = :email,
+                         phone = :phone,
+                         gender = :gender,
+                         birthdate = :birthdate,
+                         address = :address
+                     WHERE id = :id";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            $stmt->bindParam(':fullname', $data['fullname'], PDO::PARAM_STR);
+            $stmt->bindParam(':email', $data['email'], PDO::PARAM_STR);
+            $stmt->bindParam(':phone', $data['phone'], PDO::PARAM_STR);
+            $stmt->bindParam(':gender', $data['gender'], PDO::PARAM_STR);
+            $stmt->bindParam(':birthdate', $data['birthdate'], PDO::PARAM_STR);
+            $stmt->bindParam(':address', $data['address'], PDO::PARAM_STR);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error updating profile: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function changePassword($id, $newPassword) {
+        try {
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            $query = "UPDATE " . $this->table_name . " SET password = :password WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':password', $hashedPassword, PDO::PARAM_STR);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error changing password: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function verifyPassword($id, $password) {
+        try {
+            $query = "SELECT password FROM " . $this->table_name . " WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                return password_verify($password, $row['password']);
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log("Error verifying password: " . $e->getMessage());
+            return false;
         }
     }
 }

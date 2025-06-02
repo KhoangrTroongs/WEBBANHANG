@@ -167,9 +167,20 @@ CREATE TABLE IF NOT EXISTS account (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Thêm các cột mới vào bảng account
+ALTER TABLE account
+ADD COLUMN email VARCHAR(100) DEFAULT NULL,
+ADD COLUMN phone VARCHAR(20) DEFAULT NULL,
+ADD COLUMN address TEXT DEFAULT NULL,
+ADD COLUMN gender ENUM('male', 'female', 'other') DEFAULT NULL,
+ADD COLUMN birthdate DATE DEFAULT NULL;
+
+-- Thêm chỉ mục cho email để tối ưu tìm kiếm
+CREATE INDEX idx_account_email ON account(email);
+
 -- Insert admin account
-INSERT INTO account (username, password, fullname, role)
-VALUES ('admin', '$2y$10$VQYaPlxux7CLNC8mdJ0LeuWxP8cqviVVP4KD0VFaB6VgvBgGRMq5e', 'Administrator', 'admin');
+-- INSERT INTO account (username, password, fullname, role)
+-- VALUES ('admin', '$2y$10$VQYaPlxux7CLNC8mdJ0LeuWxP8cqviVVP4KD0VFaB6VgvBgGRMq5e', 'Administrator', 'admin');
 
 ALTER TABLE orders
 ADD COLUMN user_id INT AFTER id,

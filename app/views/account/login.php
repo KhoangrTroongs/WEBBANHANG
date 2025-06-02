@@ -39,10 +39,13 @@
                             <button type="submit" class="btn btn-primary py-2">
                                 <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
                             </button>
-                        </div>
-
-                        <div class="text-center">
-                            <p class="mb-0">Chưa có tài khoản? 
+                        </div>                        <div class="text-center">
+                            <p class="mb-0">Quên mật khẩu? 
+                                <a href="/webbanhang/Account/forgotPassword" class="text-primary text-decoration-none">
+                                    Khôi phục ngay
+                                </a>
+                            </p>
+                            <p class="mt-2 mb-0">Chưa có tài khoản? 
                                 <a href="/webbanhang/Account/register" class="text-primary text-decoration-none">
                                     Đăng ký ngay
                                 </a>

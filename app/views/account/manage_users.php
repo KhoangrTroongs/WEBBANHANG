@@ -178,13 +178,58 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="editUserModalLabel">Chỉnh sửa thông tin người dùng</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
+            </div>            <div class="modal-body">
                 <form id="editUserForm" action="/webbanhang/Account/updateUser" method="POST">
                     <input type="hidden" id="editUserId" name="id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editUsername" class="form-label">Tên đăng nhập</label>
+                                <input type="text" class="form-control" id="editUsername" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editFullName" class="form-label">Họ tên</label>
+                                <input type="text" class="form-control" id="editFullName" name="fullname" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editEmail" name="email">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editPhone" class="form-label">Số điện thoại</label>
+                                <input type="tel" class="form-control" id="editPhone" name="phone">
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3">
-                        <label for="editFullName" class="form-label">Họ tên</label>
-                        <input type="text" class="form-control" id="editFullName" name="fullname" required>
+                        <label for="editAddress" class="form-label">Địa chỉ</label>
+                        <textarea class="form-control" id="editAddress" name="address" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editGender" class="form-label">Giới tính</label>
+                                <select class="form-select" id="editGender" name="gender">
+                                    <option value="male">Nam</option>
+                                    <option value="female">Nữ</option>
+                                    <option value="other">Khác</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editBirthdate" class="form-label">Ngày sinh</label>
+                                <input type="date" class="form-control" id="editBirthdate" name="birthdate">
+                            </div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="editRole" class="form-label">Vai trò</label>
@@ -211,8 +256,7 @@
                 <h5 class="modal-title" id="resetPasswordModalLabel">Đặt lại mật khẩu</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <form id="resetPasswordForm" action="/webbanhang/Account/resetPassword" method="POST">
+            <div class="modal-body">                <form id="resetPasswordForm" action="/webbanhang/Account/adminResetPassword" method="POST">
                     <input type="hidden" id="resetPasswordUserId" name="id">
                     <p>Bạn đang đặt lại mật khẩu cho tài khoản: <strong id="resetPasswordUsername"></strong></p>
                     <div class="mb-3">
@@ -255,18 +299,34 @@
 
 <!-- JavaScript for User Management -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Edit User Modal
+document.addEventListener('DOMContentLoaded', function() {    // Edit User Modal
     const editUserModal = document.getElementById('editUserModal');
-    editUserModal.addEventListener('show.bs.modal', function(event) {
+    editUserModal.addEventListener('show.bs.modal', async function(event) {
         const button = event.relatedTarget;
         const id = button.getAttribute('data-id');
-        const fullname = button.getAttribute('data-fullname');
-        const role = button.getAttribute('data-role');
         
-        document.getElementById('editUserId').value = id;
-        document.getElementById('editFullName').value = fullname;
-        document.getElementById('editRole').value = role;
+        try {
+            // Gọi API để lấy thông tin chi tiết người dùng
+            const response = await fetch(`/webbanhang/Account/getUserDetails?id=${id}`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const user = await response.json();
+            
+            // Điền thông tin vào form
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUsername').value = user.username;
+            document.getElementById('editFullName').value = user.fullname;
+            document.getElementById('editEmail').value = user.email || '';
+            document.getElementById('editPhone').value = user.phone || '';
+            document.getElementById('editAddress').value = user.address || '';
+            document.getElementById('editGender').value = user.gender || 'other';
+            document.getElementById('editBirthdate').value = user.birthdate || '';
+            document.getElementById('editRole').value = user.role;
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi khi tải thông tin người dùng');
+        }
     });
 
     // Reset Password Modal

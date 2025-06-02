@@ -29,7 +29,7 @@
                                    required
                                    minlength="2"
                                    placeholder="Nhập họ và tên của bạn"
-                                   value="<?php echo isset($_POST['customer_name']) ? htmlspecialchars($_POST['customer_name'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                                   value="<?php echo isset($userInfo['fullname']) ? htmlspecialchars($userInfo['fullname'], ENT_QUOTES, 'UTF-8') : (isset($_POST['customer_name']) ? htmlspecialchars($_POST['customer_name'], ENT_QUOTES, 'UTF-8') : ''); ?>">
                             <div class="invalid-feedback">
                                 Vui lòng nhập họ và tên (ít nhất 2 ký tự).
                             </div>
@@ -44,7 +44,7 @@
                                    required
                                    pattern="[0-9]{10,11}"
                                    placeholder="Nhập số điện thoại"
-                                   value="<?php echo isset($_POST['customer_phone']) ? htmlspecialchars($_POST['customer_phone'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                                   value="<?php echo isset($userInfo['phone']) ? htmlspecialchars($userInfo['phone'], ENT_QUOTES, 'UTF-8') : (isset($_POST['customer_phone']) ? htmlspecialchars($_POST['customer_phone'], ENT_QUOTES, 'UTF-8') : ''); ?>">
                             <div class="invalid-feedback">
                                 Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số).
                             </div>
@@ -57,7 +57,7 @@
                                    id="customer_email"
                                    name="customer_email"
                                    placeholder="Nhập email của bạn"
-                                   value="<?php echo isset($_POST['customer_email']) ? htmlspecialchars($_POST['customer_email'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                                   value="<?php echo isset($userInfo['email']) ? htmlspecialchars($userInfo['email'], ENT_QUOTES, 'UTF-8') : (isset($_POST['customer_email']) ? htmlspecialchars($_POST['customer_email'], ENT_QUOTES, 'UTF-8') : ''); ?>">
                         </div>
 
                         <div class="col-md-12 mb-3">
@@ -68,7 +68,7 @@
                                       rows="3"
                                       required
                                       minlength="10"
-                                      placeholder="Nhập địa chỉ chi tiết để giao hàng"><?php echo isset($_POST['customer_address']) ? htmlspecialchars($_POST['customer_address'], ENT_QUOTES, 'UTF-8') : ''; ?></textarea>
+                                      placeholder="Nhập địa chỉ chi tiết để giao hàng"><?php echo isset($userInfo['address']) ? htmlspecialchars($userInfo['address'], ENT_QUOTES, 'UTF-8') : (isset($_POST['customer_address']) ? htmlspecialchars($_POST['customer_address'], ENT_QUOTES, 'UTF-8') : ''); ?></textarea>
                             <div class="invalid-feedback">
                                 Vui lòng nhập địa chỉ giao hàng (ít nhất 10 ký tự).
                             </div>

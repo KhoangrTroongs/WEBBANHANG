@@ -223,4 +223,22 @@ class ProductModel
         $result = $stmt->fetch(PDO::FETCH_OBJ);
         return $result->avg_price;
     }
+
+    public function getProductsNotPurchasedByUser($userId) {
+        $query = "SELECT DISTINCT p.* FROM " . $this->table_name . " p 
+                  WHERE p.id NOT IN (
+                    SELECT DISTINCT od.product_id 
+                    FROM order_details od 
+                    INNER JOIN orders o ON od.order_id = o.id 
+                    WHERE o.user_id = :user_id
+                  ) 
+                  ORDER BY RAND() 
+                  LIMIT 10"; // Limit to 10 random products for better performance
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

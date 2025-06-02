@@ -477,25 +477,29 @@ class ProductController
      */
     public function checkout()
     {
-        // Validation: giỏ hàng không rỗng
-        if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
+        if (!isset($_SESSION['user'])) {
             $_SESSION['flash'] = [
                 'type' => 'error',
-                'message' => 'Giỏ hàng của bạn đang trống.'
+                'message' => 'Vui lòng đăng nhập để tiến hành thanh toán'
             ];
-            header('Location: /webbanhang/Product/cart');
-            return;
+            header('Location: /webbanhang/Account/login');
+            exit;
         }
 
-        $cartItems = $_SESSION['cart'];
-        $totalAmount = 0;
+        if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
+            header('Location: /webbanhang/Product/cart');
+            exit;
+        }
 
-        // Tính tổng tiền
+        // Lấy thông tin người dùng từ database
+        require_once 'app/models/AccountModel.php';
+        $accountModel = new AccountModel($this->db);
+        $userInfo = $accountModel->getAccountById($_SESSION['user']['id']);        $cartItems = $_SESSION['cart'];
+        $totalAmount = 0;
         foreach ($cartItems as $item) {
             $totalAmount += $item['price'] * $item['quantity'];
         }
 
-        // Hiển thị trang thanh toán
         include 'app/views/product/checkout.php';
     }
 
