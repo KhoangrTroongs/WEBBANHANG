@@ -3,6 +3,7 @@
 require_once('app/config/database.php');
 require_once('app/models/ProductModel.php');
 require_once('app/models/CategoryModel.php');
+require_once('app/helpers/SessionHelper.php');
 
 class ProductController
 {    private $productModel;
@@ -14,7 +15,7 @@ class ProductController
         $this->productModel = new ProductModel($this->db);
     }    private function checkAdminRole()
     {
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+        if (!SessionHelper::isAdmin()) {
             $_SESSION['flash'] = [
                 'type' => 'error',
                 'message' => 'Bạn không có quyền truy cập trang này!'

@@ -242,7 +242,8 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 sticky-top">
+    <?php require_once 'app/helpers/SessionHelper.php'; ?>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand text-primary" href="/webbanhang/Product/">
                 <i class="fas fa-boxes me-2"></i>NHD Tech Shop
@@ -251,8 +252,9 @@
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">                <ul class="navbar-nav me-auto">
-                    <?php if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'): ?>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <?php if (!SessionHelper::isAdmin()): ?>
                     <li class="nav-item">
                         <a class="nav-link px-3" href="/webbanhang/Product/">
                             <i class="fas fa-home me-1"></i>Trang chủ
@@ -264,7 +266,7 @@
                             <i class="fa-brands fa-product-hunt me-1"></i>Sản phẩm
                         </a>
                     </li>
-                    <?php if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'admin'): ?>
+                    <?php if (SessionHelper::isAdmin()): ?>
                     <li class="nav-item">
                         <a class="nav-link px-3" href="/webbanhang/Product/manage">
                             <i class="fas fa-tasks me-1"></i>Quản lý sản phẩm
@@ -281,8 +283,9 @@
                         </a>
                     </li>
                     <?php endif; ?>
-                </ul>                <div class="d-flex align-items-center">
-                    <?php if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'): ?>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <?php if (!SessionHelper::isAdmin()): ?>
                     <form class="search-form d-flex me-3" action="/webbanhang/Product/search" method="GET">
                         <input class="form-control" type="search" name="keyword" placeholder="Tìm kiếm sản phẩm..." aria-label="Search">
                         <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
@@ -308,14 +311,14 @@
                     </a>
 
                     <!-- Orders Link (for logged in users) -->
-                    <?php if (isset($_SESSION['user'])): ?>
+                    <?php if (SessionHelper::isLoggedIn()): ?>
                         <a href="/webbanhang/Product/orders" class="btn btn-outline-primary me-2">
                             <i class="fas fa-box me-1"></i>Đơn hàng
                         </a>
                     <?php endif; ?>
                     <?php endif; ?>
 
-                    <?php if (!isset($_SESSION['user'])): ?>
+                    <?php if (!SessionHelper::isLoggedIn()): ?>
                         <!-- Login/Register Buttons -->
                         <a href="/webbanhang/Account/login" class="btn btn-outline-primary me-2">
                             <i class="fas fa-sign-in-alt me-1"></i>Đăng nhập
@@ -328,7 +331,9 @@
                         <div class="dropdown">
                             <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-user-circle me-1"></i><?php echo htmlspecialchars($_SESSION['user']['fullname']); ?>
-                            </button>                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">                                <?php if (!isset($_SESSION['user']['role']) || $_SESSION['user']['role'] !== 'admin'): ?>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <?php if (!SessionHelper::isAdmin()): ?>
                                 <li><a class="dropdown-item" href="/webbanhang/Product">
                                     <i class="fas fa-home me-2"></i>Trang chủ
                                 </a></li>
@@ -342,7 +347,7 @@
                                     <i class="fas fa-box me-2"></i>Đơn hàng của tôi
                                 </a></li>
                                 <?php endif; ?>
-                                <?php if (isset($_SESSION['user']['role']) && $_SESSION['user']['role'] === 'admin'): ?>
+                                <?php if (SessionHelper::isAdmin()): ?>
                                 <li><a class="dropdown-item" href="/webbanhang/Product/manage">
                                     <i class="fas fa-cog me-2"></i>Quản lý sản phẩm
                                 </a></li>

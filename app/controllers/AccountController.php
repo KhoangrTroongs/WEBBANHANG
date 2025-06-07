@@ -3,6 +3,7 @@ require_once('app/config/database.php');
 require_once('app/models/AccountModel.php');
 require_once('app/models/OrderModel.php');
 require_once('app/models/ProductModel.php');
+require_once('app/helpers/SessionHelper.php');
 
 class AccountController
 {
@@ -15,7 +16,7 @@ class AccountController
 
     private function checkAdminRole()
     {
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+        if (!SessionHelper::isAdmin()) {
             $_SESSION['flash'] = [
                 'type' => 'error',
                 'message' => 'Bạn không có quyền truy cập trang này!'
@@ -253,6 +254,8 @@ class AccountController
         }    
     }    function logout(){
         unset($_SESSION['user']);
+        unset($_SESSION['username']);
+        unset($_SESSION['user_role']);
         $_SESSION['flash'] = [
             'type' => 'success',
             'message' => 'Đăng xuất thành công!'
@@ -261,8 +264,8 @@ class AccountController
         exit;
     }function checkLogin(){
         if ($_SERVER['REQUEST_METHOD'] == 'POST'){
-            $username = $_POST['username'] ?? ''; 
-            $password = $_POST['password'] ?? ''; 
+            $username = $_POST['username'] ?? '';
+            $password = $_POST['password'] ?? '';
             
             if (empty($username) || empty($password)) {
                 $_SESSION['errors']['login'] = 'Vui lòng nhập đầy đủ thông tin đăng nhập';
@@ -271,28 +274,29 @@ class AccountController
             }
             
             $account = $this->accountModel->getAccountByUserName($username);
-            if ($account) { 
+            if ($account) {
                 $pwd_hashed = $account->password;
-                if (password_verify($password, $pwd_hashed)) { 
+                if (password_verify($password, $pwd_hashed)) {
                     $_SESSION['user'] = [
                         'id' => $account->id,
                         'username' => $account->username,
                         'fullname' => $account->fullname,
                         'role' => $account->role
                     ];
-                    
+                    $_SESSION['username'] = $account->username;
+                    $_SESSION['user_role'] = $account->role;
                     $_SESSION['flash'] = [
                         'type' => 'success',
                         'message' => 'Đăng nhập thành công!'
                     ];
-                    header('Location: /webbanhang/Product/list'); 
-                    exit; 
-                } else { 
+                    header('Location: /webbanhang/Product/list');
+                    exit;
+                } else {
                     $_SESSION['errors']['login'] = 'Mật khẩu không chính xác';
                     header('Location: /webbanhang/Account/login');
                     exit;
-                } 
-            } else { 
+                }
+            } else {
                 $_SESSION['errors']['login'] = 'Tài khoản không tồn tại';
                 header('Location: /webbanhang/Account/login');
                 exit;
