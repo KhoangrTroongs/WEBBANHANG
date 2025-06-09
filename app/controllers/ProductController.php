@@ -64,23 +64,20 @@ class ProductController
             // Hiển thị trang chủ mới
             include 'app/views/product/home.php';
         }
-    }    public function manage()
+    }    
+    public function manage()
     {
         // Kiểm tra quyền admin
         $this->checkAdminRole();
 
-        // Lấy tham số tìm kiếm, lọc và sắp xếp từ URL
+        // Lấy tham số tìm kiếm và sắp xếp
         $search = isset($_GET['search']) ? $_GET['search'] : null;
-        $category_id = isset($_GET['category']) ? $_GET['category'] : null;
         $sort = isset($_GET['sort']) ? $_GET['sort'] : null;
+        $category_id = isset($_GET['category']) ? $_GET['category'] : null;
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = 25; // Hiển thị 25 sản phẩm mỗi trang
-
-        // Đảm bảo page không nhỏ hơn 1
-        if ($page < 1) $page = 1;
-
-        // Lấy danh sách sản phẩm với các điều kiện và phân trang
-        $result = $this->productModel->getProducts($search, $category_id, $sort, $page, $limit);
+        
+        // Trong trang quản lý, hiển thị tất cả sản phẩm kể cả đã ẩn
+        $result = $this->productModel->getProducts($search, $category_id, $sort, $page, 25, true);
         $products = $result['products'];
         $pagination = $result['pagination'];
 
@@ -93,11 +90,10 @@ class ProductController
 
         // Hiển thị trang quản lý sản phẩm
         include 'app/views/product/manage.php';
-    }
-
-    public function show($id)
+    }    public function show($id)
     {
-        $product = $this->productModel->getProductById($id);
+        // Chỉ hiện sản phẩm available cho khách hàng xem
+        $product = $this->productModel->getProductById($id, false);
         if ($product) {
             include 'app/views/product/show.php';
         } else {
@@ -138,19 +134,23 @@ class ProductController
                 header('Location: /webbanhang/Product');
             }
         }
-    }
-
-    public function edit($id)
+    }    public function edit($id)
     {
         // Kiểm tra quyền admin
         $this->checkAdminRole();
 
-        $product = $this->productModel->getProductById($id);
+        // Admin có thể chỉnh sửa cả sản phẩm đã ẩn
+        $product = $this->productModel->getProductById($id, true);
         $categories = (new CategoryModel($this->db))->getCategories();
         if ($product) {
             include 'app/views/product/edit.php';
         } else {
-            echo "Không thấy sản phẩm.";
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'Không tìm thấy sản phẩm.'
+            ];
+            header('Location: /webbanhang/Product/manage');
+            exit();
         }
     }
 
@@ -786,6 +786,69 @@ class ProductController
 
         // Hiển thị trang danh sách đơn hàng
         include 'app/views/product/user_orders.php';
+    }    public function toggleStatus($id = null)
+    {
+        // Kiểm tra quyền admin
+        $this->checkAdminRole();
+
+        // Xử lý AJAX POST request
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Lấy product_id từ URL parameter hoặc POST data
+            $product_id = $id;
+            $status = isset($_POST['status']) ? $_POST['status'] : null;
+
+            // Log để debug
+            error_log("Toggle status request - Product ID: " . $product_id . ", New status: " . $status);
+
+            // Validate input
+            if (!$product_id || !in_array($status, ['available', 'unavailable'])) {
+                $response = ['success' => false, 'message' => 'Invalid input data'];
+                $this->sendJsonResponse($response);
+                return;
+            }
+
+            // Cập nhật trạng thái sản phẩm và lấy kết quả
+            $result = $this->productModel->toggleProductStatus($product_id);
+            
+            // Log kết quả
+            error_log("Toggle status result: " . print_r($result, true));
+            
+            // Trả về response cho AJAX request
+            $this->sendJsonResponse($result);
+            return;
+        }
+        
+        // Xử lý GET request (fallback cho non-AJAX)
+        if ($id) {
+            $result = $this->productModel->toggleProductStatus($id);
+            
+            if ($result['success']) {
+                $_SESSION['flash'] = [
+                    'type' => 'success',
+                    'message' => 'Đã thay đổi trạng thái sản phẩm thành ' . 
+                               ($result['new_status'] == 'available' ? 'đang hiện' : 'đã ẩn')
+                ];
+            } else {
+                $_SESSION['flash'] = [
+                    'type' => 'error',
+                    'message' => 'Không thể thay đổi trạng thái sản phẩm'
+                ];
+            }
+            
+            header('Location: /webbanhang/Product/manage');
+            exit();
+        }
+        
+        // Nếu không có id và không phải POST request
+        header('Location: /webbanhang/Product/manage');
+        exit();
+    }
+
+    private function sendJsonResponse($data)
+    {
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit();
     }
 }
 ?>

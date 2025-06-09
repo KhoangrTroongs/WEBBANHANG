@@ -132,13 +132,14 @@
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold">Danh sách sản phẩm</h5>
             <div class="d-flex align-items-center">
-                <label class="me-2 text-nowrap">Sắp xếp theo:</label>
-                <select class="form-select form-select-sm" style="width: 200px;" id="sortOptions">
+                <label class="me-2 text-nowrap">Sắp xếp theo:</label>                <select class="form-select form-select-sm" style="width: 200px;" id="sortOptions">
                     <option value="newest" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'newest') ? 'selected' : ''; ?>>Mới nhất</option>
                     <option value="price_asc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'price_asc') ? 'selected' : ''; ?>>Giá: Thấp đến cao</option>
                     <option value="price_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'price_desc') ? 'selected' : ''; ?>>Giá: Cao đến thấp</option>
                     <option value="name_asc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'name_asc') ? 'selected' : ''; ?>>Tên: A-Z</option>
                     <option value="name_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'name_desc') ? 'selected' : ''; ?>>Tên: Z-A</option>
+                    <option value="status_asc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'status_asc') ? 'selected' : ''; ?>>Trạng thái: Đang hiện trước</option>
+                    <option value="status_desc" <?php echo (isset($_GET['sort']) && $_GET['sort'] == 'status_desc') ? 'selected' : ''; ?>>Trạng thái: Đã ẩn trước</option>
                 </select>
             </div>
         </div>
@@ -147,12 +148,11 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
-                    <tr>
-                        <th scope="col" width="60">#</th>
-                        <th scope="col" width="80">Hình ảnh</th>
+                    <tr>                        <th scope="col" width="60">#</th>                        <th scope="col" width="80">Hình ảnh</th>
                         <th scope="col">Tên sản phẩm</th>
                         <th scope="col">Danh mục</th>
                         <th scope="col">Giá</th>
+                        <th scope="col">Trạng thái</th>
                         <th scope="col" width="150">Thao tác</th>
                     </tr>
                 </thead>
@@ -173,24 +173,31 @@
                                 <div class="small text-muted text-truncate" style="max-width: 300px;">
                                     <?php echo substr(htmlspecialchars($product->description, ENT_QUOTES, 'UTF-8'), 0, 50) . '...'; ?>
                                 </div>
-                            </td>
-                            <td>
+                            </td>                            <td>
                                 <span class="badge bg-light text-dark">
                                     <?php echo htmlspecialchars($product->category_name, ENT_QUOTES, 'UTF-8'); ?>
                                 </span>
+                            </td>                            <td><?php echo number_format($product->price, 0, ',', '.'); ?> VND</td>
+                            <td>
+                                <span class="badge <?php echo $product->status == 'available' ? 'bg-success' : 'bg-danger'; ?>">
+                                    <?php echo $product->status == 'available' ? 'Đang hiện' : 'Đã ẩn'; ?>
+                                </span>
                             </td>
-                            <td><?php echo number_format($product->price, 0, ',', '.'); ?> VND</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <a href="/webbanhang/Product/show/<?php echo $product->id; ?>" class="btn btn-outline-primary" title="Xem chi tiết">
                                         <i class="fas fa-eye"></i>
-                                    </a>
+                                    </a>                                    
                                     <a href="/webbanhang/Product/edit/<?php echo $product->id; ?>" class="btn btn-outline-success" title="Sửa">
                                         <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="/webbanhang/Product/delete/<?php echo $product->id; ?>" class="btn btn-outline-danger" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </a>
+                                    </a>                                    
+                                    <button type="button" 
+                                            class="btn <?php echo $product->status == 'available' ? 'btn-outline-danger' : 'btn-outline-success'; ?> toggle-status" 
+                                            data-product-id="<?php echo $product->id; ?>"
+                                            data-current-status="<?php echo $product->status; ?>"
+                                            title="<?php echo $product->status == 'available' ? 'Ẩn sản phẩm' : 'Hiện sản phẩm'; ?>">
+                                        <i class="fas <?php echo $product->status == 'available' ? 'fa-eye-slash' : 'fa-eye'; ?>"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -291,6 +298,50 @@
     </div>
 </div>
 
+<style>
+    /* Tùy chỉnh badge trạng thái */
+    .badge.bg-success, .badge.bg-danger {
+        font-size: 0.875rem;
+        padding: 0.4em 0.8em;
+    }
+    
+    /* Badge cho danh mục */
+    .badge.bg-light {
+        font-size: 0.875rem;
+        padding: 0.4em 0.8em;
+        border: 1px solid #dee2e6;
+    }
+
+    /* Thêm icon cho trạng thái */
+    .badge.bg-success::before {
+        content: "•";
+        margin-right: 5px;
+    }
+    
+    .badge.bg-danger::before {
+        content: "•";
+        margin-right: 5px;
+    }
+
+    .product-thumbnail {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+    }
+
+    .btn-group .btn {
+        margin: 0 2px;
+    }
+
+    .toggle-status:focus {
+        box-shadow: none;
+    }
+
+    .toggle-status:hover {
+        opacity: 0.8;
+    }
+</style>
+
 <!-- JavaScript for Filters -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -330,11 +381,64 @@
                 // Đảm bảo luôn giữ ở trang quản lý
                 if (currentUrl.pathname.indexOf('manage') === -1) {
                     currentUrl.pathname = '/webbanhang/Product/manage';
-                }
-
-                window.location.href = currentUrl.toString();
+                }                window.location.href = currentUrl.toString();
             });
         }
+
+        // Xử lý toggle status bằng AJAX
+        document.querySelectorAll('.toggle-status').forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.dataset.productId;
+                const currentStatus = this.dataset.currentStatus;                const button = this;
+                // Sửa lại cách chọn badge trạng thái - chỉ chọn badge trong cột trạng thái
+                const tr = button.closest('tr');
+                const statusCell = tr.querySelector('td:nth-child(6)'); // Cột thứ 6 là cột trạng thái
+                const statusBadge = statusCell.querySelector('.badge');
+                
+                if (!confirm(`Bạn có chắc chắn muốn ${currentStatus === 'available' ? 'ẩn' : 'hiện'} sản phẩm này?`)) {
+                    return;
+                }                // Thêm console.log để debug
+                console.log('Sending request:', {
+                    product_id: productId,
+                    status: currentStatus === 'available' ? 'unavailable' : 'available'
+                });
+                
+                fetch(`/webbanhang/Product/toggleStatus/${productId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: `status=${currentStatus === 'available' ? 'unavailable' : 'available'}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật giao diện
+                        const newStatus = data.new_status;
+                        
+                        // Cập nhật nút
+                        button.dataset.currentStatus = newStatus;
+                        button.classList.toggle('btn-outline-danger');
+                        button.classList.toggle('btn-outline-success');
+                        button.title = newStatus === 'available' ? 'Ẩn sản phẩm' : 'Hiện sản phẩm';
+                        button.querySelector('i').classList.remove('fa-eye', 'fa-eye-slash');
+                        button.querySelector('i').classList.add(newStatus === 'available' ? 'fa-eye-slash' : 'fa-eye');
+                        
+                        // Cập nhật badge trạng thái
+                        statusBadge.classList.remove('bg-success', 'bg-danger');
+                        statusBadge.classList.add(newStatus === 'available' ? 'bg-success' : 'bg-danger');
+                        statusBadge.textContent = newStatus === 'available' ? 'Đang hiện' : 'Đã ẩn';
+                    } else {
+                        alert('Không thể thay đổi trạng thái sản phẩm!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Đã xảy ra lỗi khi thay đổi trạng thái sản phẩm!');
+                });
+            });
+        });
     });
 </script>
 

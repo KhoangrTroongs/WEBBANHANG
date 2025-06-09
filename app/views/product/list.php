@@ -92,7 +92,8 @@
                                         <a class="dropdown-item" href="/webbanhang/Product/show/<?php echo $product->id; ?>">
                                             <i class="fas fa-eye me-2 text-primary"></i>Xem chi tiết
                                         </a>
-                                    </li>                                    <li>
+                                    </li>                                    
+                                    <li>
                                         <a class="dropdown-item text-danger" href="/webbanhang/Product/delete/<?php echo $product->id; ?>" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
                                             <i class="fas fa-trash-alt me-2"></i>Xóa
                                         </a>

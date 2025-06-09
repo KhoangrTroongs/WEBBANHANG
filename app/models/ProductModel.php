@@ -9,14 +9,18 @@ class ProductModel
         $this->conn = $db;
     }
 
-
-
-    public function getProductById($id)
+    public function getProductById($id, $includeUnavailable = true)
     {
         $query = "SELECT p.*, c.name as category_name
                   FROM " . $this->table_name . " p
                   LEFT JOIN category c ON p.category_id = c.id
                   WHERE p.id = :id";
+                  
+        // Nếu không includeUnavailable, chỉ lấy sản phẩm đang available
+        if (!$includeUnavailable) {
+            $query .= " AND p.status = 'available'";
+        }
+        
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
@@ -38,9 +42,8 @@ class ProductModel
         }
         if (count($errors) > 0) {
             return $errors;
-        }
-        $query = "INSERT INTO " . $this->table_name . " (name, description, price, category_id, image)
-                  VALUES (:name, :description, :price, :category_id, :image)";
+        }        $query = "INSERT INTO " . $this->table_name . " (name, description, price, category_id, image, status)
+                  VALUES (:name, :description, :price, :category_id, :image, 'available')";
         $stmt = $this->conn->prepare($query);
 
         $name = htmlspecialchars(strip_tags($name));
@@ -96,60 +99,54 @@ class ProductModel
             return true;
         }
         return false;
-    }
-
-    public function getProducts($search = null, $category_id = null, $sort = null, $page = 1, $limit = 25)
+    }    public function getProducts($search = null, $category_id = null, $sort = null, $page = 1, $limit = 25, $includeUnavailable = false)
     {
-        // Truy vấn đếm tổng số sản phẩm
-        $countQuery = "SELECT COUNT(*) as total
-                      FROM " . $this->table_name . " p
-                      WHERE 1=1";
+        // Base query for counting
+        $countQuery = "SELECT COUNT(*) as total FROM {$this->table_name} p WHERE 1=1";
+        if (!$includeUnavailable) {
+            $countQuery .= " AND p.status = 'available'";
+        }
 
         $countParams = [];
 
-        // Thêm điều kiện tìm kiếm cho đếm
         if ($search) {
             $countQuery .= " AND (p.name LIKE :search OR p.description LIKE :search)";
-            $countParams[':search'] = "%$search%";
+            $countParams[':search'] = "%{$search}%";
         }
 
-        // Thêm điều kiện lọc theo danh mục cho đếm
         if ($category_id) {
             $countQuery .= " AND p.category_id = :category_id";
             $countParams[':category_id'] = $category_id;
         }
 
         $countStmt = $this->conn->prepare($countQuery);
-
-        // Bind các tham số cho đếm
         foreach ($countParams as $key => $value) {
             $countStmt->bindValue($key, $value);
         }
-
         $countStmt->execute();
         $totalCount = $countStmt->fetch(PDO::FETCH_OBJ)->total;
 
-        // Truy vấn lấy dữ liệu sản phẩm với phân trang
-        $query = "SELECT p.id, p.name, p.description, p.price, p.image, p.category_id, c.name as category_name
-                  FROM " . $this->table_name . " p
-                  LEFT JOIN category c ON p.category_id = c.id
-                  WHERE 1=1";
+        // Base query for selecting products
+        $query = "SELECT p.*, c.name as category_name 
+                 FROM {$this->table_name} p 
+                 LEFT JOIN category c ON p.category_id = c.id 
+                 WHERE 1=1";
+
+        if (!$includeUnavailable) {
+            $query .= " AND p.status = 'available'";
+        }
 
         $params = [];
 
-        // Thêm điều kiện tìm kiếm
         if ($search) {
             $query .= " AND (p.name LIKE :search OR p.description LIKE :search)";
-            $params[':search'] = "%$search%";
+            $params[':search'] = "%{$search}%";
         }
 
-        // Thêm điều kiện lọc theo danh mục
         if ($category_id) {
             $query .= " AND p.category_id = :category_id";
             $params[':category_id'] = $category_id;
-        }
-
-        // Thêm sắp xếp
+        }        // Add sorting
         if ($sort) {
             switch ($sort) {
                 case 'price_asc':
@@ -164,6 +161,12 @@ class ProductModel
                 case 'name_desc':
                     $query .= " ORDER BY p.name DESC";
                     break;
+                case 'status_asc':
+                    $query .= " ORDER BY FIELD(p.status, 'available', 'unavailable')";
+                    break;
+                case 'status_desc':
+                    $query .= " ORDER BY FIELD(p.status, 'unavailable', 'available')";
+                    break;
                 case 'newest':
                     $query .= " ORDER BY p.id DESC";
                     break;
@@ -171,29 +174,25 @@ class ProductModel
                     $query .= " ORDER BY p.id DESC";
             }
         } else {
-            // Mặc định sắp xếp theo ID giảm dần (mới nhất trước)
             $query .= " ORDER BY p.id DESC";
         }
 
-        // Thêm LIMIT và OFFSET cho phân trang
+        // Add pagination
         $offset = ($page - 1) * $limit;
         $query .= " LIMIT :limit OFFSET :offset";
 
         $stmt = $this->conn->prepare($query);
 
-        // Bind các tham số
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }
-
-        // Bind tham số phân trang
+        
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-
+        
         $stmt->execute();
         $result = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-        // Trả về cả dữ liệu sản phẩm và thông tin phân trang
         return [
             'products' => $result,
             'pagination' => [
@@ -240,5 +239,29 @@ class ProductModel
         $stmt->execute();
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function toggleProductStatus($id)
+    {
+        // Lấy trạng thái hiện tại
+        $query = "SELECT status FROM " . $this->table_name . " WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        $current = $stmt->fetch(PDO::FETCH_OBJ);
+        
+        // Đổi trạng thái
+        $newStatus = ($current->status == 'available') ? 'unavailable' : 'available';
+        
+        // Cập nhật trạng thái mới
+        $query = "UPDATE " . $this->table_name . " SET status = :status WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':status', $newStatus);
+        $stmt->bindParam(':id', $id);
+        
+        if ($stmt->execute()) {
+            return ['success' => true, 'new_status' => $newStatus];
+        }
+        return ['success' => false];
     }
 }
