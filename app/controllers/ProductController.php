@@ -92,12 +92,26 @@ class ProductController
         include 'app/views/product/manage.php';
     }    public function show($id)
     {
-        // Chỉ hiện sản phẩm available cho khách hàng xem
-        $product = $this->productModel->getProductById($id, false);
+        // Kiểm tra nếu đang ở trang quản lý và là admin
+        $isAdmin = SessionHelper::isAdmin();
+        $isManagePage = strpos($_SERVER['HTTP_REFERER'] ?? '', '/Product/manage') !== false;
+
+        // Admin từ trang quản lý có thể xem tất cả sản phẩm
+        $includeUnavailable = $isAdmin && $isManagePage;
+        
+        $product = $this->productModel->getProductById($id, $includeUnavailable);
         if ($product) {
             include 'app/views/product/show.php';
         } else {
-            echo "Không thấy sản phẩm.";
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'Không tìm thấy sản phẩm.'
+            ];
+            
+            // Chuyển hướng về trang trước hoặc trang chủ sản phẩm
+            $redirectUrl = $isManagePage ? '/webbanhang/Product/manage' : '/webbanhang/Product/';
+            header('Location: ' . $redirectUrl);
+            exit();
         }
     }
 
@@ -172,9 +186,19 @@ class ProductController
             }
             $edit = $this->productModel->updateProduct($id, $name, $description, $price, $category_id, $image);
             if ($edit) {
-                header('Location: /webbanhang/Product');
+                $_SESSION['flash'] = [
+                    'type' => 'success',
+                    'message' => 'Đã cập nhật sản phẩm thành công.'
+                ];
+                header('Location: /webbanhang/Product/manage');
+                exit();
             } else {
-                echo "Đã xảy ra lỗi khi lưu sản phẩm.";
+                $_SESSION['flash'] = [
+                    'type' => 'error',
+                    'message' => 'Đã xảy ra lỗi khi lưu sản phẩm.'
+                ];
+                header('Location: ' . $_SERVER['HTTP_REFERER']);
+                exit();
             }
         }
     }
