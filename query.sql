@@ -186,6 +186,9 @@ ALTER TABLE orders
 ADD COLUMN user_id INT AFTER id,
 ADD FOREIGN KEY (user_id) REFERENCES account(id);
 
+ALTER TABLE product 
+ADD COLUMN status ENUM('available', 'unavailable') DEFAULT 'available';
+
 -- Note: The password hash above corresponds to 'admin123'
 -- Make sure to change this password after first login for security reasons
 

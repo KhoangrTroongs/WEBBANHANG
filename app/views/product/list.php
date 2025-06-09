@@ -92,14 +92,7 @@
                                         <a class="dropdown-item" href="/webbanhang/Product/show/<?php echo $product->id; ?>">
                                             <i class="fas fa-eye me-2 text-primary"></i>Xem chi tiết
                                         </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="/webbanhang/Product/edit/<?php echo $product->id; ?>">
-                                            <i class="fas fa-edit me-2 text-success"></i>Sửa
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
+                                    </li>                                    <li>
                                         <a class="dropdown-item text-danger" href="/webbanhang/Product/delete/<?php echo $product->id; ?>" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
                                             <i class="fas fa-trash-alt me-2"></i>Xóa
                                         </a>
@@ -123,14 +116,9 @@
                         <div class="mt-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="price fw-bold"><?php echo number_format($product->price, 0, ',', '.'); ?> VND</span>
-                                <div class="btn-group">
-                                    <a href="/webbanhang/Product/edit/<?php echo $product->id; ?>" class="btn btn-sm btn-outline-success">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="/webbanhang/Product/show/<?php echo $product->id; ?>" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-eye me-1"></i>Chi tiết
-                                    </a>
-                                </div>
+                <a href="/webbanhang/Product/show/<?php echo $product->id; ?>" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye me-1"></i>Chi tiết
+                                </a>
                             </div>
                             <div class="d-grid">
                                 <a href="/webbanhang/Product/addToCart/<?php echo $product->id; ?>" class="btn btn-success btn-sm">
