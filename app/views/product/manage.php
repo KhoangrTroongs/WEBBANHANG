@@ -29,10 +29,9 @@
                 <h5 class="mb-0 fw-bold">Thao tác nhanh</h5>
             </div>
             <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-sm-4">
-                        <a href="/webbanhang/Product/add" class="btn btn-primary w-100">
-                            <i class="fas fa-plus-circle me-1"></i>Thêm sản phẩm
+                <div class="row g-3">                <div class="col-sm-4">
+                        <a href="/webbanhang/Product/add" class="btn btn-primary w-100" title="Thêm sản phẩm mới">
+                            <i class="fas fa-plus me-1"></i>Thêm sản phẩm
                         </a>
                     </div>
                     <div class="col-sm-4">
@@ -98,50 +97,47 @@
 <!-- Search and Filter -->
 <div class="card mb-4 border-0 shadow-sm">
     <div class="card-body">
-        <div class="row g-3">            <div class="col-md-6">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="search-box position-relative flex-grow-1">
                 <form action="/webbanhang/Product/manage" method="GET" class="d-flex">
-                    <input type="text" class="form-control me-2" name="search" placeholder="Tìm kiếm sản phẩm..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8') : ''; ?>">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search me-1"></i>Tìm kiếm
-                    </button>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 ps-0" name="search" 
+                               placeholder="Tìm kiếm sản phẩm..." 
+                               value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                    </div>
                 </form>
-            </div>            <div class="col-md-6">
-                <div class="row g-2">
-                    <div class="col-md-4">
-                        <select class="form-select" id="categoryFilter">
-                            <option value="">Tất cả danh mục</option>
-                            <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo $category->id; ?>" <?php echo (isset($_GET['category']) && $_GET['category'] == $category->id) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <select class="form-select" id="statusFilter">
-                            <option value="">Tất cả trạng thái</option>
-                            <option value="available" <?php echo (isset($_GET['status']) && $_GET['status'] == 'available') ? 'selected' : ''; ?>>Đang hiện</option>
-                            <option value="unavailable" <?php echo (isset($_GET['status']) && $_GET['status'] == 'unavailable') ? 'selected' : ''; ?>>Đã ẩn</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <select class="form-select" id="priceFilter">
-                            <option value="">Tất cả giá</option>
-                            <option value="0-1000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '0-1000000') ? 'selected' : ''; ?>>Dưới 1 triệu</option>
-                            <option value="1000000-5000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '1000000-5000000') ? 'selected' : ''; ?>>1 - 5 triệu</option>
-                            <option value="5000000-10000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '5000000-10000000') ? 'selected' : ''; ?>>5 - 10 triệu</option>
-                            <option value="10000000-999999999" <?php echo (isset($_GET['price']) && $_GET['price'] == '10000000-999999999') ? 'selected' : ''; ?>>Trên 10 triệu</option>
-                        </select>
-                    </div>
-                    <div class="col-12 d-flex justify-content-between align-items-center">
-                        <button type="button" id="resetFilters" class="btn btn-outline-secondary">
-                            <i class="fas fa-undo-alt me-1"></i>Đặt lại
-                        </button>
-                        <a href="/webbanhang/Product/add" class="btn btn-success">
-                            <i class="fas fa-plus-circle me-1"></i>Thêm sản phẩm
-                        </a>
-                    </div>
-                </div>
+            </div>
+
+            <div class="filter-group d-flex gap-2 flex-wrap flex-xl-nowrap">
+                <select class="form-select" style="min-width: 150px;" id="categoryFilter">
+                    <option value=""><i class="fas fa-tag"></i> Tất cả danh mục</option>
+                    <?php foreach ($categories as $category): ?>
+                    <option value="<?php echo $category->id; ?>" <?php echo (isset($_GET['category']) && $_GET['category'] == $category->id) ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <select class="form-select" style="min-width: 150px;" id="statusFilter">
+                    <option value=""><i class="fas fa-check-circle"></i> Trạng thái</option>                    <option value="available" <?php echo (isset($_GET['status']) && $_GET['status'] == 'available') ? 'selected' : ''; ?>><i class="fas fa-eye"></i> Đang hiện</option>
+                    <option value="unavailable" <?php echo (isset($_GET['status']) && $_GET['status'] == 'unavailable') ? 'selected' : ''; ?>><i class="fas fa-eye-slash"></i> Đã ẩn</option>
+                </select>
+
+                <select class="form-select" style="min-width: 150px;" id="priceFilter">
+                    <option value=""><i class="fas fa-money-bill"></i> Mức giá</option>                    <option value="0-1000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '0-1000000') ? 'selected' : ''; ?>><i class="fas fa-tag"></i> Dưới 1 triệu</option>
+                    <option value="1000000-5000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '1000000-5000000') ? 'selected' : ''; ?>><i class="fas fa-tags"></i> 1 - 5 triệu</option>
+                    <option value="5000000-10000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '5000000-10000000') ? 'selected' : ''; ?>><i class="fas fa-tags"></i> 5 - 10 triệu</option>
+                    <option value="10000000-999999999" <?php echo (isset($_GET['price']) && $_GET['price'] == '10000000-999999999') ? 'selected' : ''; ?>><i class="fas fa-money-bill-wave"></i> Trên 10 triệu</option>
+                </select>
+
+                <button type="button" id="resetFilters" class="btn btn-light border" title="Đặt lại bộ lọc">
+                    <i class="fas fa-undo-alt"></i>
+                </button>                <a href="/webbanhang/Product/add" class="btn btn-primary" title="Thêm sản phẩm mới">
+                    <i class="fas fa-plus"></i>
+                </a>
             </div>
         </div>
     </div>
@@ -438,11 +434,86 @@
     .toggle-status:hover {
         opacity: 0.8;
     }
+
+    /* Tùy chỉnh thanh tìm kiếm và bộ lọc */
+    .search-box .input-group {
+        box-shadow: 0 2px 4px rgba(0,0,0,.05);
+    }
+
+    .search-box .input-group-text,
+    .search-box .form-control {
+        border-color: #e5e9f2;
+    }
+
+    .search-box .form-control:focus {
+        border-color: #e5e9f2;
+        box-shadow: none;
+    }
+
+    .filter-group select.form-select,
+    .filter-group .btn {
+        height: 38px;
+        box-shadow: 0 2px 4px rgba(0,0,0,.05);
+    }
+
+    .filter-group select.form-select {
+        border-color: #e5e9f2;
+        background-color: white;
+    }
+
+    .filter-group select.form-select:focus {
+        border-color: #e5e9f2;
+        box-shadow: none;
+    }
+
+    .filter-group .btn-light {
+        background-color: white;
+        border-color: #e5e9f2;
+    }    .filter-group .btn-light:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Style for select options with icons */
+    .form-select option i,
+    .form-select option .fas {
+        margin-right: 8px;
+        color: #6c757d;
+    }
+
+    /* Improved select styling */
+    .form-select {
+        padding-right: 2rem;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right .75rem center;
+        background-size: 16px 12px;
+    }
+
+    @media (max-width: 768px) {
+        .filter-group {
+            width: 100%;
+            justify-content: space-between;
+        }
+    }
 </style>
 
 <!-- JavaScript for Filters and Edit Modal -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {        function updateFilters(paramName, value) {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize select elements with Font Awesome icons
+        const selects = document.querySelectorAll('.form-select');
+        selects.forEach(select => {
+            select.querySelectorAll('option').forEach(option => {
+                const icon = option.querySelector('i');
+                if (icon) {
+                    const iconClass = icon.getAttribute('class');
+                    option.innerHTML = `<i class="${iconClass}"></i> ${option.textContent}`;
+                }
+            });
+        });
+
+        function updateFilters(paramName, value) {
             const currentUrl = new URL(window.location.href);
             
             if (value) {
