@@ -68,16 +68,24 @@ class ProductController
     public function manage()
     {
         // Kiểm tra quyền admin
-        $this->checkAdminRole();
-
-        // Lấy tham số tìm kiếm và sắp xếp
-        $search = isset($_GET['search']) ? $_GET['search'] : null;
+        $this->checkAdminRole();        // Lấy tham số tìm kiếm và lọc
+        $search = isset($_GET['search']) ? trim($_GET['search']) : null;
         $sort = isset($_GET['sort']) ? $_GET['sort'] : null;
         $category_id = isset($_GET['category']) ? $_GET['category'] : null;
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $status = isset($_GET['status']) ? $_GET['status'] : null;
+        $price = isset($_GET['price']) ? $_GET['price'] : null;
+
+        // Lưu lại các tham số tìm kiếm để phân trang
+        $searchParams = [];
+        if ($search) $searchParams['search'] = $search;
+        if ($sort) $searchParams['sort'] = $sort;
+        if ($category_id) $searchParams['category'] = $category_id;
+        if ($status) $searchParams['status'] = $status;
+        if ($price) $searchParams['price'] = $price;
         
-        // Trong trang quản lý, hiển thị tất cả sản phẩm kể cả đã ẩn
-        $result = $this->productModel->getProducts($search, $category_id, $sort, $page, 25, true);
+        // Trong trang quản lý, hiển thị tất cả sản phẩm kể cả đã ẩn và bao gồm kết quả tìm kiếm và lọc
+        $result = $this->productModel->getProducts($search, $category_id, $sort, $page, 25, true, $status, $price);
         $products = $result['products'];
         $pagination = $result['pagination'];
 
@@ -179,27 +187,39 @@ class ProductController
             $description = $_POST['description'];
             $price = $_POST['price'];
             $category_id = $_POST['category_id'];
+
+            // Xử lý upload hình ảnh
             if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-                $image = $this->uploadImage($_FILES['image']);
+                try {
+                    $image = $this->uploadImage($_FILES['image']);
+                } catch (Exception $e) {
+                    $_SESSION['flash'] = [
+                        'type' => 'error',
+                        'message' => $e->getMessage()
+                    ];
+                    header('Location: ' . $_SERVER['HTTP_REFERER']);
+                    exit();
+                }
             } else {
                 $image = $_POST['existing_image'];
             }
+
             $edit = $this->productModel->updateProduct($id, $name, $description, $price, $category_id, $image);
+
             if ($edit) {
                 $_SESSION['flash'] = [
                     'type' => 'success',
                     'message' => 'Đã cập nhật sản phẩm thành công.'
                 ];
-                header('Location: /webbanhang/Product/manage');
-                exit();
             } else {
                 $_SESSION['flash'] = [
                     'type' => 'error',
                     'message' => 'Đã xảy ra lỗi khi lưu sản phẩm.'
                 ];
-                header('Location: ' . $_SERVER['HTTP_REFERER']);
-                exit();
             }
+            
+            header('Location: /webbanhang/Product/manage');
+            exit();
         }
     }
 

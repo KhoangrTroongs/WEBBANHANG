@@ -98,28 +98,49 @@
 <!-- Search and Filter -->
 <div class="card mb-4 border-0 shadow-sm">
     <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <form action="/webbanhang/Product/search" method="GET" class="d-flex">
-                    <input type="text" class="form-control me-2" name="keyword" placeholder="Tìm kiếm sản phẩm..." value="<?php echo isset($_GET['keyword']) ? htmlspecialchars($_GET['keyword'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+        <div class="row g-3">            <div class="col-md-6">
+                <form action="/webbanhang/Product/manage" method="GET" class="d-flex">
+                    <input type="text" class="form-control me-2" name="search" placeholder="Tìm kiếm sản phẩm..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search'], ENT_QUOTES, 'UTF-8') : ''; ?>">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-search me-1"></i>Tìm kiếm
                     </button>
                 </form>
-            </div>
-            <div class="col-md-6 d-flex justify-content-md-end">
-                <div class="d-flex">
-                    <select class="form-select me-2" id="categoryFilter">
-                        <option value="">Tất cả danh mục</option>
-                        <?php foreach ($categories as $category): ?>
-                        <option value="<?php echo $category->id; ?>" <?php echo (isset($_GET['category']) && $_GET['category'] == $category->id) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <a href="/webbanhang/Product/add" class="btn btn-success">
-                        <i class="fas fa-plus-circle me-1"></i>Thêm sản phẩm
-                    </a>
+            </div>            <div class="col-md-6">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <select class="form-select" id="categoryFilter">
+                            <option value="">Tất cả danh mục</option>
+                            <?php foreach ($categories as $category): ?>
+                            <option value="<?php echo $category->id; ?>" <?php echo (isset($_GET['category']) && $_GET['category'] == $category->id) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="statusFilter">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="available" <?php echo (isset($_GET['status']) && $_GET['status'] == 'available') ? 'selected' : ''; ?>>Đang hiện</option>
+                            <option value="unavailable" <?php echo (isset($_GET['status']) && $_GET['status'] == 'unavailable') ? 'selected' : ''; ?>>Đã ẩn</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="priceFilter">
+                            <option value="">Tất cả giá</option>
+                            <option value="0-1000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '0-1000000') ? 'selected' : ''; ?>>Dưới 1 triệu</option>
+                            <option value="1000000-5000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '1000000-5000000') ? 'selected' : ''; ?>>1 - 5 triệu</option>
+                            <option value="5000000-10000000" <?php echo (isset($_GET['price']) && $_GET['price'] == '5000000-10000000') ? 'selected' : ''; ?>>5 - 10 triệu</option>
+                            <option value="10000000-999999999" <?php echo (isset($_GET['price']) && $_GET['price'] == '10000000-999999999') ? 'selected' : ''; ?>>Trên 10 triệu</option>
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <button type="button" id="resetFilters" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo-alt me-1"></i>Đặt lại
+                        </button>
+                        <a href="/webbanhang/Product/add" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-1"></i>Thêm sản phẩm
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -187,10 +208,17 @@
                                 <div class="btn-group btn-group-sm">
                                     <a href="/webbanhang/Product/show/<?php echo $product->id; ?>" class="btn btn-outline-primary" title="Xem chi tiết">
                                         <i class="fas fa-eye"></i>
-                                    </a>                                    
-                                    <a href="/webbanhang/Product/edit/<?php echo $product->id; ?>" class="btn btn-outline-success" title="Sửa">
+                                    </a>
+                                    <button type="button" class="btn btn-outline-success edit-product" 
+                                            title="Sửa sản phẩm"
+                                            data-id="<?php echo $product->id; ?>"
+                                            data-name="<?php echo htmlspecialchars($product->name, ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-description="<?php echo htmlspecialchars($product->description, ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-price="<?php echo $product->price; ?>"
+                                            data-category="<?php echo $product->category_id; ?>"
+                                            data-image="<?php echo $product->image; ?>">
                                         <i class="fas fa-edit"></i>
-                                    </a>                                    
+                                    </button>
                                     <button type="button" 
                                             class="btn <?php echo $product->status == 'available' ? 'btn-outline-danger' : 'btn-outline-success'; ?> toggle-status" 
                                             data-product-id="<?php echo $product->id; ?>"
@@ -298,6 +326,76 @@
     </div>
 </div>
 
+<!-- Modal Sửa sản phẩm -->
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProductModalLabel">
+                    <i class="fas fa-edit me-2"></i>Chỉnh sửa sản phẩm
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm" method="POST" action="/webbanhang/Product/update" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    <input type="hidden" name="id" id="editProductId">
+                    <div class="row g-3">
+                        <div class="col-md-12 mb-3">
+                            <label for="editProductName" class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editProductName" name="name" required>
+                            <div class="invalid-feedback">Vui lòng nhập tên sản phẩm</div>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label for="editProductDescription" class="form-label">Mô tả <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="editProductDescription" name="description" rows="4" required></textarea>
+                            <div class="invalid-feedback">Vui lòng nhập mô tả sản phẩm</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="editProductPrice" class="form-label">Giá (VND) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="editProductPrice" name="price" min="0" required>
+                            <div class="invalid-feedback">Vui lòng nhập giá sản phẩm hợp lệ</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="editProductCategory" class="form-label">Danh mục <span class="text-danger">*</span></label>
+                            <select class="form-select" id="editProductCategory" name="category_id" required>
+                                <option value="">Chọn danh mục</option>
+                                <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo $category->id; ?>"><?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="invalid-feedback">Vui lòng chọn danh mục</div>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label for="editProductImage" class="form-label">Hình ảnh sản phẩm</label>
+                            <input type="file" class="form-control" id="editProductImage" name="image" accept="image/*">
+                            <input type="hidden" name="existing_image" id="editExistingImage">
+                            <div class="form-text">Chọn hình ảnh mới hoặc giữ nguyên hình ảnh hiện tại</div>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <div id="imagePreview" class="mt-2">
+                                <img src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; display: none;">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Hủy
+                </button>
+                <button type="submit" form="editProductForm" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Lưu thay đổi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     /* Tùy chỉnh badge trạng thái */
     .badge.bg-success, .badge.bg-danger {
@@ -342,19 +440,15 @@
     }
 </style>
 
-<!-- JavaScript for Filters -->
+<!-- JavaScript for Filters and Edit Modal -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Category filter
-        const categoryFilter = document.getElementById('categoryFilter');
-        categoryFilter.addEventListener('change', function() {
-            const categoryId = this.value;
+    document.addEventListener('DOMContentLoaded', function() {        function updateFilters(paramName, value) {
             const currentUrl = new URL(window.location.href);
-
-            if (categoryId) {
-                currentUrl.searchParams.set('category', categoryId);
+            
+            if (value) {
+                currentUrl.searchParams.set(paramName, value);
             } else {
-                currentUrl.searchParams.delete('category');
+                currentUrl.searchParams.delete(paramName);
             }
 
             // Đảm bảo luôn giữ ở trang quản lý
@@ -363,6 +457,29 @@
             }
 
             window.location.href = currentUrl.toString();
+        }
+
+        // Category filter
+        const categoryFilter = document.getElementById('categoryFilter');
+        categoryFilter.addEventListener('change', function() {
+            updateFilters('category', this.value);
+        });
+
+        // Status filter
+        const statusFilter = document.getElementById('statusFilter');
+        statusFilter.addEventListener('change', function() {
+            updateFilters('status', this.value);
+        });
+
+        // Price filter
+        const priceFilter = document.getElementById('priceFilter');
+        priceFilter.addEventListener('change', function() {
+            updateFilters('price', this.value);
+        });
+
+        // Reset filters
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            window.location.href = '/webbanhang/Product/manage';
         });
 
         // Sort options
@@ -438,6 +555,55 @@
                     alert('Đã xảy ra lỗi khi thay đổi trạng thái sản phẩm!');
                 });
             });
+        });
+
+        // Xử lý modal sửa sản phẩm
+        const editModal = new bootstrap.Modal(document.getElementById('editProductModal'));
+        const editForm = document.getElementById('editProductForm');
+        const imagePreview = document.getElementById('imagePreview').querySelector('img');
+
+        // Xử lý khi nhấn nút sửa sản phẩm
+        document.querySelectorAll('.edit-product').forEach(button => {
+            button.addEventListener('click', function() {
+                const product = this.dataset;
+                document.getElementById('editProductId').value = product.id;
+                document.getElementById('editProductName').value = product.name;
+                document.getElementById('editProductDescription').value = product.description;
+                document.getElementById('editProductPrice').value = product.price;
+                document.getElementById('editProductCategory').value = product.category;
+                document.getElementById('editExistingImage').value = product.image;
+
+                // Hiển thị preview hình ảnh nếu có
+                if (product.image) {
+                    imagePreview.src = '/webbanhang/' + product.image;
+                    imagePreview.style.display = 'block';
+                } else {
+                    imagePreview.style.display = 'none';
+                }
+
+                editModal.show();
+            });
+        });
+
+        // Preview hình ảnh khi chọn file mới
+        document.getElementById('editProductImage').addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Form validation
+        editForm.addEventListener('submit', function(event) {
+            if (!this.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            this.classList.add('was-validated');
         });
     });
 </script>

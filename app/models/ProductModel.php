@@ -99,15 +99,29 @@ class ProductModel
             return true;
         }
         return false;
-    }    public function getProducts($search = null, $category_id = null, $sort = null, $page = 1, $limit = 25, $includeUnavailable = false)
+    }    public function getProducts($search = null, $category_id = null, $sort = null, $page = 1, $limit = 25, $includeUnavailable = false, $status = null, $priceRange = null)
     {
         // Base query for counting
         $countQuery = "SELECT COUNT(*) as total FROM {$this->table_name} p WHERE 1=1";
-        if (!$includeUnavailable) {
+        if (!$includeUnavailable && !$status) {
             $countQuery .= " AND p.status = 'available'";
         }
 
         $countParams = [];
+
+        // Add status filter
+        if ($status) {
+            $countQuery .= " AND p.status = :status";
+            $countParams[':status'] = $status;
+        }
+
+        // Add price range filter
+        if ($priceRange) {
+            list($minPrice, $maxPrice) = explode('-', $priceRange);
+            $countQuery .= " AND p.price BETWEEN :min_price AND :max_price";
+            $countParams[':min_price'] = $minPrice;
+            $countParams[':max_price'] = $maxPrice;
+        }
 
         if ($search) {
             $countQuery .= " AND (p.name LIKE :search OR p.description LIKE :search)";
@@ -124,19 +138,31 @@ class ProductModel
             $countStmt->bindValue($key, $value);
         }
         $countStmt->execute();
-        $totalCount = $countStmt->fetch(PDO::FETCH_OBJ)->total;
-
-        // Base query for selecting products
+        $totalCount = $countStmt->fetch(PDO::FETCH_OBJ)->total;        // Base query for selecting products
         $query = "SELECT p.*, c.name as category_name 
                  FROM {$this->table_name} p 
                  LEFT JOIN category c ON p.category_id = c.id 
                  WHERE 1=1";
 
-        if (!$includeUnavailable) {
+        if (!$includeUnavailable && !$status) {
             $query .= " AND p.status = 'available'";
         }
 
         $params = [];
+
+        // Add status filter
+        if ($status) {
+            $query .= " AND p.status = :status";
+            $params[':status'] = $status;
+        }
+
+        // Add price range filter
+        if ($priceRange) {
+            list($minPrice, $maxPrice) = explode('-', $priceRange);
+            $query .= " AND p.price BETWEEN :min_price AND :max_price";
+            $params[':min_price'] = $minPrice;
+            $params[':max_price'] = $maxPrice;
+        }
 
         if ($search) {
             $query .= " AND (p.name LIKE :search OR p.description LIKE :search)";
